@@ -44,10 +44,48 @@ public:
                     // 如果队列为空，且线程池被标记为关闭，说明“既没活干，又收到了下班通知”，立刻 `break` 跳出死循环。
                     else if (pool->isClosed) break;
                     // 如果队列为空，且没收到关闭通知，说明“暂时没活干”。调用 `wait(locker)` 让当前线程休眠。
+                    // `wait(locker)` 的底层机制：
+                    // 当前线程休眠的同时，会自动释放 `locker` 所持有的互斥锁，从而允许其他线程投递任务。
+                    // 当其他线程调用 `notify_one()` 或 `notify_all()` 时，该线程会被唤醒。
+                    // 唤醒后，`wait()` 函数会在返回前自动重新获取互斥锁，然后继续执行下一轮 `while(true)` 循环判断。
                     else pool->cond.wait(locker);
                 }
-            });
+            // 极为核心的一步！将 `std::thread` 对象与底层的系统级线程分离。
+            // 当 C++ 中 `std::thread` 的局部对象在 `for` 循环结束被销毁时，系统级线程不受影响，继续在后台执行。
+            }).detach();  
         }
+    }
+
+    ThreadPool() = default;  // 默认无参构造
+
+    ThreadPool(ThreadPool&&) = default;  // 默认移动构造
+
+    ~ThreadPool() {
+        // 检查智能指针是否有效。因为如果当前线程池对象之前被 `std::move` 过
+        // `pool_` 会变成空指针，直接操作会引发段错误（Crash）。
+        if (static_cast<bool>(pool_)) {
+            // 构建一个局部作用域
+            {
+                // 这一步必须加锁，因为后台的线程可能正在读取 `isClosed` 的状态。
+                std::lock_guard<std::mutex> locker(pool_->mtx);
+                pool_->isClosed = true;
+            }
+            // 作用：调用 `notify_all()` 唤醒所有正在 `cond.wait(locker)` 处睡眠的工作线程。
+            pool_->cond.notify_all();
+        }
+    }
+
+    // 向线程池添加新任务的通用 API。
+    template<typename F>
+    void AddTask(F&& task) {  // 这里的 `&&` 并不是右值引用，而是配合模板使用的 万能引用
+        {
+            std::lock_guard<std::mutex> locker(pool_->mtx);
+            // 完美转发。它能保持 `task` 原本的左右值属性。
+            // 如果外部传入的是右值，就继续当右值 `move` 给队列；如果是左值，就安全地进行 Copy。
+            pool_->tasks.emplace(std::forward<F>(task));
+        }
+        // 任务安全入队并解锁后，调用 `notify_one()`。
+        pool_->cond.notify_one();
     }
 private:
     // 共享状态结构体
