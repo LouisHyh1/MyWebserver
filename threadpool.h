@@ -1,4 +1,6 @@
-#pragma once
+#ifndef THREADPOOL_H
+#define THREADPOOL_H
+
 #include <assert.h>
 #include <mutex>
 #include <condition_variable>
@@ -102,3 +104,5 @@ private:
     };
     std::shared_ptr<Pool> pool_;
 };
+
+#endif

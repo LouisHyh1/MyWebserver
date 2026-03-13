@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BUFFER_H
+#define BUFFER_H
 
 #include <cstring>
 #include <iostream>
@@ -66,3 +67,5 @@ private:
 	std::atomic<size_t> readPos_;
 	std::atomic<size_t> writePos_;
 };
+
+#endif

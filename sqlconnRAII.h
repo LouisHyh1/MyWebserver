@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SQLCONNRAII_H
+#define SQLCONNRAII_H
 #include "sqlconnpool.h"
 
 // 资源在对象构造初始化 资源在对象析构时释放，用这个类来实现
@@ -29,3 +30,5 @@ private:
     MYSQL* sql_;  // 保存当前负责管理的那个数据库连接的指针。
     SqlConnPool* connpool_;  // 保存这个连接所属的池子的指针。
 };
+
+#endif

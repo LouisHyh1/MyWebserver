@@ -1,4 +1,5 @@
-#pragma once
+#ifndef HEAP_TIMER_H
+#define HEAP_TIMER_H
 
 #include <queue>
 #include <unordered_map>
@@ -87,3 +88,5 @@ private:
     // 哈希表，用于快速定位节点在堆中的索引。
     std::unordered_map<int, size_t> ref_;  
 };
+
+#endif

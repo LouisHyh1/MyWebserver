@@ -1,4 +1,6 @@
-#pragma once
+#ifndef SQLCONNPOOL_H
+#define SQLCONNPOOL_H
+
 #include <mysql/mysql.h>
 #include <string>
 #include <queue>
@@ -57,3 +59,5 @@ private:
     // 控制连接数量的信号量
     sem_t semId_;
 };
+
+#endif

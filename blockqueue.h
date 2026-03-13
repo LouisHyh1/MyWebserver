@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BLOCKQUEUE_H
+#define BLOCKQUEUE_H
 
 #include <mutex>
 #include <deque>
@@ -206,3 +207,5 @@ bool BlockDeque<T>::pop(T& item, int timeout) {
     condProducer_.notify_one();
     return true;
 }
+
+#endif
