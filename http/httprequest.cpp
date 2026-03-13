@@ -49,7 +49,7 @@ bool HttpRequest::parse(Buffer& buff) {
     while (buff.ReadableBytes() && state_ != FINISH) {
         // 在缓冲区的可读起点（`Peek()`）到写起点（`BeginWriteConst()`，即当前数据的结尾）之间
         // 寻找匹配 `\r\n` 的位置。返回值 `lineEnd` 指向 `\r` 的位置。
-        const char lineEnd = search(buff.Peek(), buff.BeginWriteConst(), CRLF, CRLF + 2);
+        const char* lineEnd = search(buff.Peek(), buff.BeginWriteConst(), CRLF, CRLF + 2);
         // 利用迭代器构造函数，将 `Peek()` 到 `lineEnd` 之间的字符拷贝出来
         // 形成一个不包含 `\r\n` 的纯净的字符串 `line`。
         string line(buff.Peek(), lineEnd);
