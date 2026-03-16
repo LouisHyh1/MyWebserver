@@ -170,3 +170,207 @@ int HttpRequest::ConverHex(char ch) {
     if (ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
     return ch;
 }
+
+// 处理 HTTP 的 POST 请求，专门提取表单中的用户名和密码
+// 并根据是“登录”还是“注册”去查数据库验证，最后根据验证结果修改请求路径（跳转到成功或失败页面）。
+void HttpRequest::ParsePost_() {
+    // 1. 判断是否是我们需要处理的 POST 请求
+    if (method_ == "POST" && header_["Content-Type"] == "application/x-www-form-urlencoded") {
+        // 调用专门的解析函数，将 `body_` 中的字符串拆解为键值对，存入 `post_` 这个哈希表中
+        ParseFromUrlencoded_();
+        // 去全局路由表 `DEFAULT_HTML_TAG` 中查找当前请求的路径（比如 `/login.html`）。
+        auto it = DEFAULT_HTML_TAG.find(path_);
+        if (it != DEFAULT_HTML_TAG.end()) {
+            // 如果找到了，取出对应的 `tag`（标志位）。
+            int tag = it->second;
+            // 打印调试日志。
+            LOG_DEBUG("Tag:%d", tag);
+            // 安全校验：确保 `tag` 确实是 0 或 1。
+            if (tag == 0 || tag == 1) {
+                // 将整型 tag 转换为布尔语义，可读性更强。
+                bool isLogin = (tag == 1);
+                // 从刚才解析好的 `post_` 字典中拿出 `username` 和 `password`，传给数据库校验函数 `UserVerify`。
+                if (UserVerify(post_["username"], post_["password"], isLogin)) {
+                    // 如果 `UserVerify` 返回 `true`（登录成功 或 注册成功）
+                    // 将请求的路径 `path_` 强行篡改为 `"/welcome.html"`。
+                    path_ = "/welcome.html";
+                } else {
+                    // 如果失败（密码错误、用户已存在等），篡改为 `"/error.html"`。
+                    path_ = "/error.html";
+                }
+            }
+        }
+    }
+}
+
+void HttpRequest::ParseFromUrlencoded_() {
+    if (body_.size() == 0) return;
+    string key, value;
+    int num = 0;
+    int n = body_.size();
+    int i = 0, j = 0;
+    for (; i < n; i++) {
+        char ch = body_[i];
+        switch (ch) {
+        // 说明之前走过的字符拼成了一个 `Key`（键）。
+        case '=':
+            // 用 `substr` 从 `j` 开始截取长度为 `i-j` 的字符串，赋给 `key`。
+            key = body_.substr(j, i - j);
+            // 然后将 `j` 移动到 `i+1`，准备迎接后续的 `Value`。
+            j = i + 1;
+            break;
+        case '+':
+            // 在 URL 编码标准中，表单里的空格会被编码成 `+`。
+            body_[i] = ' ';
+            break;
+        case '%':
+            // 如果输入了特殊字符（比如中文或标点符号 `!`）
+            // 浏览器会把它变成 `%` 加上两个十六进制数字（比如 `!` 变成 `%21`）。
+            // 把十六进制转回十进制的 ASCII 码值（比如 `%21` 就是 $2 \times 16 + 1 = 33$，33 恰好是 `!` 的 ASCII 码）。
+            num = ConverHex(body_[i + 1]) * 16 + ConverHex(body_[i + 2]);
+            // 把计算出的十进制 ASCII 码拆成十位和个位，覆盖在原来的十六进制字符上。
+            body_[i + 1] = num % 10 + '0';
+            body_[i + 2] = num / 10 + '0';
+            i += 2;
+            break;
+        case '&':
+            // 遇到 `&` 号：说明一个完整的键值对（`Key=Value`）结束了。
+            value = body_.substr(j, i - j);
+            j = i + 1;
+            post_[key] = value;
+            LOG_DEBUG("%s = %s", key.c_str(), value.c_str());
+            break;
+        default:
+            break;
+        }
+    }
+    assert (j <= i);
+    // 最后一个 `value`（也就是 `123`）在 `for` 循环里是不会被切分和保存的！
+    // 所以在循环结束后，我们需要做个补救。如果 `j < i`（说明还有剩下的字符没切完）
+    // 我们就把剩下的这串字符当作最后一个 `value`，存入 `post_` 字典中。
+    if (post_.count(key) == 0 && j < i) {
+        value = body_.substr(j, i - j);
+        post_[key] = value;
+    }
+}
+
+// 数据库交互与用户鉴权
+bool HttpRequest::UserVerify(const string& name, const string& pwd, bool isLogin) {
+    // 1. 如果用户名或密码为空，直接拒绝，返回失败。防御性编程。
+    if (name == "" || pwd == "") return false;
+    // 2. 记录一条日志，方便后台调试。
+    LOG_INFO("Verify name:%s pwd:%s", name.c_str(), pwd.c_str());
+    // 3. 声明数据库连接指针。
+    MYSQL* sql;
+    // 4. 【核心设计】使用 RAII 手法从“数据库连接池”中获取一个连接。
+    SqlConnRAII(sql, SqlConnPool::Instance());
+    // 5. 断言检查：确保成功拿到了数据库连接，拿不到就直接终止程序（说明服务器数据库挂了）。
+    assert(sql != nullptr);
+
+    bool flag = false;   // 默认最终结果为失败
+    unsigned int j = 0;  // 列数计数器
+    char order[256] = {0};  // SQL 语句缓冲区，初始化清零
+    MYSQL_FIELD* fields = nullptr;   // 字段元数据指针
+    MYSQL_RES* res = nullptr;   // 查询结果集指针
+
+    // 登录逻辑：默认你失败 (`false`)。除非去数据库查到了你的账号，并且密码匹配，才给你改成 `true`。
+    // 注册逻辑：默认你可以注册 (`true`)。除非去数据库一查，发现这个用户名已经被别人占用了，才给你改成 `false`。
+    if (!isLogin) flag = true;
+
+    /* 查询用户及密码 */
+    // 1. 把 SQL 语句拼接到 order 数组中。LIMIT 1 是优化，只要找到一个匹配的就停止搜索。
+    snprintf(order, 256, "SELECT username, password FROM user WHERE username='%s' LIMIT 1", name.c_str());
+    LOG_DEBUG("%s", order);
+
+    // 2. mysql_query 执行 SQL 语句。返回 0 代表执行成功，非 0 代表 SQL 语句有语法错误或执行失败。
+    if (mysql_query(sql, order)) {
+        mysql_free_result(res);  // 释放可能存在的内存
+        return false;            // 查询失败，直接退出
+    }
+
+    // 3. mysql_store_result 将刚才查询的结果从 MySQL 服务器拉取到本地内存中。
+    res = mysql_store_result(sql);
+
+    // 4. 获取列数和列字段信息（这通常规范写法，但在这段代码后面的逻辑中其实没用到）
+    // mysql_num_fields() 函数会检查你的查询结果集（存储在 res 变量中），并计算出一共有多少列。
+    j = mysql_num_fields(res);
+    // mysql_fetch_fields() 函数会返回一个数组（准确地说是 MYSQL_FIELD 结构体的数组）
+    // 里面包含了查询结果中每一列的详细定义。它将这个数组的指针赋值给变量 fields。
+    fields = mysql_fetch_fields(res);
+
+    // mysql_fetch_row 每次从结果集 res 中抓取一行。由于有 LIMIT 1，这个 while 循环最多只会执行 1 次。
+    while (MYSQL_ROW row = mysql_fetch_row(res)) {
+        LOG_DEBUG("MYSQL ROW: %s %s", row[0], row[1]);
+
+        // row[0] 是 username，row[1] 是 password。取出数据库里存的密码。
+        string password{row[1]};
+         // 判断当前是登录行为还是注册行为？
+        if (isLogin) {
+            // 是登录：比对用户输入的密码 (pwd) 和数据库里的密码 (password) 是否一致
+            if (pwd == password) {
+                flag = true;  // 密码正确！鉴权成功！
+            } else {
+                flag = false;
+                LOG_DEBUG("pwd error!");  // 密码错误！
+            }
+        } else {
+            // 是注册：既然 while 循环进来了，说明在数据库里查到了这个 username！
+            // 说明用户名被别人注册过了，所以注册失败。
+            flag = false;
+            LOG_DEBUG("user used!");
+        }
+    }
+
+    // 【极其重要】查完数据后，一定要释放结果集占据的内存，否则会导致内存泄漏！
+    mysql_free_result(res);
+
+    /* 注册行为 且 用户名未被使用*/
+    // 如果是注册(!isLogin)，且 flag 依然是 true (说明上面的 while 循环根本没进去，没查到重名)
+    if (!isLogin && flag) {
+        LOG_DEBUG("register!");
+
+        // 1. 清空刚才的 SQL 语句缓冲区
+        bzero(order, 256);
+
+        // 2. 拼接 INSERT 插入语句，将新用户的账密写入数据库
+        snprintf(order, 256, "INSERT INTO user(username, password) VALUES('%s','%s')", name.c_str(), pwd.c_str());
+        LOG_DEBUG("%s", order);
+
+        // 3. 执行插入操作
+        if (mysql_query(sql, order)) {
+            LOG_DEBUG("Insert error!");
+            flag = false;
+        }
+
+        // 否则，flag保持true不变
+    }
+
+    LOG_DEBUG("UserVerify success!!");
+
+    // 返回最终结果：true(登录成功/注册成功) 或 false(密码错误/用户不存在/用户名被抢占/数据库错误)
+    return flag;
+}
+
+string HttpRequest::path() const { return path_; }
+string& HttpRequest::path() { return path_; }
+string HttpRequest::method() const { return method_; }
+string HttpRequest::version() const { return version_; }
+
+// 从 HTTP POST 请求的请求体中提取对应的值（value）。
+string HttpRequest::GetPost(const string& key) const {
+    assert(key != "");
+    auto it = post_.find(key);
+    if (it != post_.end()) {
+        return it->second;
+    }
+    return "";
+}
+
+string HttpRequest::GetPost(const char* key) const {
+    assert(key != nullptr);
+    auto it = post_.find(key);
+    if (it != post_.end()) {
+        return it->second;
+    }
+    return "";
+}
