@@ -44,6 +44,7 @@ private:
     void AddHeader_(Buffer& buff);     // 添加 HTTP 响应头
     void AddContent_(Buffer& buff);    // 添加 HTTP 响应体/正文
 
+    // 处理错误页面
     // 根据当前的 `code_`（如 404），修改 `path_` 的值，将其指向对应的错误页面路径（如 `/404.html`）。
     void ErrorHtml_();
     // 通过解析 `path_` 中的文件后缀名（如 `.css`, `.jpg`），返回对应的文件类型
