@@ -38,6 +38,7 @@ void Buffer::RetrieveUntil(const char* end) {
 	assert(Peek() <= end);
 	Retrieve(end - Peek());
 }
+
 // 全部归还
 void Buffer::RetrieveAll() {
 	// `bzero` 是 POSIX 系统函数
@@ -47,6 +48,7 @@ void Buffer::RetrieveAll() {
 	readPos_ = 0;
 	writePos_ = 0;
 }
+
 // 转为 string 并全部归还
 string Buffer::RetrieveAllToStr() {
 	string str(Peek(), ReadableBytes());

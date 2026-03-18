@@ -31,7 +31,7 @@ public:
 
     // 用于获取当前连接的文件描述符、端口号、IP 字符串和地址结构体。
     int GetFd() const;
-    int GetPost() const;
+    int GetPort() const;
     const char* GetIP() const;
     sockaddr_in GetAddr() const;
 
