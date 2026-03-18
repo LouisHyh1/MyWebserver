@@ -19,7 +19,7 @@ public:
 
     // 把一个新的文件描述符 `fd`（比如刚 accept 的客户端连接）挂载到内核的 epoll 红黑树上。
     bool AddFd(int fd, uint32_t events);
-    //修改已经挂载的 `fd` 的监听事件。
+    // 修改已经挂载的 `fd` 的监听事件。
     bool ModFd(int fd, uint32_t events);
     // 当客户端断开连接时，将其从 epoll 树上摘除，不再监听。
     bool DelFd(int fd);
