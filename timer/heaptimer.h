@@ -9,7 +9,7 @@
 #include <functional> 
 #include <assert.h> 
 #include <chrono>
-//#include "../log/log.h"
+#include "../log/log.h"
 
 
 // 定义了一个无参数、无返回值 `void()` 的函数包装器。作用：当定时器超时，会触发这个回调函数

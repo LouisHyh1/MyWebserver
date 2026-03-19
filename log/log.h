@@ -10,7 +10,7 @@
 #include <assert.h>           // 引入 assert 断言，用于调试阶段捕获逻辑错误
 #include <sys/stat.h>         // Linux系统调用，文件状态信息，这里主要为了使用 mkdir 创建目录
 #include "blockqueue.h"       // 自定义：线程安全的阻塞队列（异步日志的核心容器）
-#include "buffer.h" // 自定义：可自动扩容的缓冲区（用于拼接和格式化单条日志）
+#include "../buffer/buffer.h" // 自定义：可自动扩容的缓冲区（用于拼接和格式化单条日志）
 
 class Log {
 public:
