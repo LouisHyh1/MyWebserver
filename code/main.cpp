@@ -8,7 +8,7 @@ int main() {
     // connPoolNum (数据库连接池数量) = 12  threadNum (线程池数量) = 6(通常设置为 CPU核心数 或 CPU核心数 + 1)
     // openLog (开启日志) = true  logLevel (日志等级) = 1  logQueSize (日志异步队列大小) = 1024
     WebServer server(
-        5220, 3, 60000, false,
+        1316, 3, 60000, false,
         3306, "root", "20020522", "Louis_db",
         12, 6, true, 1, 1024
     );

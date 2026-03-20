@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 3.10)
 # 2. 设置项目名称和使用的语言 (C++)
 project(WebServer CXX)
 
-# 3. 设置 C++ 标准为 C++14
-set(CMAKE_CXX_STANDARD 14)
+# 3. 设置 C++ 标准为 C++20
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 4. 添加全局编译选项 (-O2 -Wall -g)

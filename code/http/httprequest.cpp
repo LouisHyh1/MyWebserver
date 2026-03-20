@@ -116,7 +116,7 @@ void HttpRequest::ParsePath_() {
 // 拆解 `GET /index HTTP/1.1` 这样的字符串。
 bool HttpRequest::ParseRequestLine_(const string& line) {
     // 定义正则表达式。
-    regex patten("^([^ ]) ([^ ]) HTTP/([^ ])$");
+    regex patten("^([^ ]*) ([^ ]*) HTTP/([^ ]*)$");
     // 定义一个匹配结果集对象。
     // 它就像是多个抽屉，用来存放刚刚正则表达式里 `()`（捕获组）抓取出来的东西。
     smatch subMatch;

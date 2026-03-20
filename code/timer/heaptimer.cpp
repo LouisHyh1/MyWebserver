@@ -162,6 +162,12 @@ void HeapTimer::pop() {
     del_(0);
 }
 
+// 清空整个定时器（清空堆数组和哈希表）。
+void HeapTimer::clear() {
+    ref_.clear();
+    heap_.clear();
+}
+
 // 计算距离下一个定时器触发，还剩下多少毫秒。
 
 // 如果服务器当前没有网络请求进来，把 `GetNextTick()` 的返回值传给 `epoll_wait`。

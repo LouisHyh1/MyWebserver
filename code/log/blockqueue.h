@@ -84,8 +84,8 @@ void BlockDeque<T>::Close() {
     // 但是，此时当前线程还没有退出大括号，因此 mtx_ 锁还没有被释放。
     // 那些刚被唤醒的线程发现锁被占用，立刻又被迫进入阻塞状态等待锁释放
     // 会引发多余的线程上下文切换，造成性能浪费。
-    conProducer_.notify_all();
-    conConsumer_.notify_all();
+    condProducer_.notify_all();
+    condConsumer_.notify_all();
 }
 
 template<class T>
@@ -173,7 +173,7 @@ bool BlockDeque<T>::full() {
 template<class T>
 bool BlockDeque<T>::pop(T& item) {  // 要获取的数据通过引用传递（输出参数）带出来。
     std::unique_lock<std::mutex> locker(mtx_);
-    while (deq.empty()) {  // 依然是为了防虚假唤醒。队列为空时，消费者必须等待。
+    while (deq_.empty()) {  // 依然是为了防虚假唤醒。队列为空时，消费者必须等待。
         condConsumer_.wait(locker);
         // 如果线程在休眠时，系统调用了 `Close()`，
         // `Close()` 里的 `notify_all()` 会把这个线程唤醒。
@@ -202,7 +202,7 @@ bool BlockDeque<T>::pop(T& item, int timeout) {
         }
         if (isClose_) return false;
     }
-    item = deq_front();
+    item = deq_.front();
     deq_.pop_front();
     condProducer_.notify_one();
     return true;
