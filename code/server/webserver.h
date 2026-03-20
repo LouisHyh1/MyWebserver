@@ -37,7 +37,7 @@ public:
     ~WebServer();
 
     // 服务器的主循环，调用 `epoll_wait` 阻塞等待事件发生，然后进行分发。
-    void start();
+    void Start();
 
 private:
     // 创建监听套接字（`socket()`），绑定端口（`bind()`），并开始监听（`listen()`）。成功返回 true。

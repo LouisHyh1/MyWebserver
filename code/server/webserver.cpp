@@ -100,7 +100,7 @@ void WebServer::InitEventMode_(int trigMode) {
     HttpConn::isET = (connEvent_ & EPOLLET);
 }
 
-void WebServer::start() {
+void WebServer::Start() {
     // 决定了 `epoll_wait` 的超时时间。-1 表示如果没有网络事件，线程就永远阻塞（休眠），不消耗 CPU。
     int timeMS = -1;
 
