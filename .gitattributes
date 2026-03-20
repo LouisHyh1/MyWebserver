@@ -1,0 +1,19 @@
+# 标记前端静态资源为二进制文件，防止 Git 转换换行符导致文件损坏
+*.mp4 binary
+*.webm binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+
+# 字体文件同样属于二进制文件
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+
+# 明确指定文本文件使用 LF (可选，针对你的前端代码)
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
