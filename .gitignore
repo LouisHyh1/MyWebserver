@@ -11,6 +11,9 @@
 *.1
 *.log
 *.exe
+perf.*
+out.*
+*.svg
 /.vscode
 resources/
 build/

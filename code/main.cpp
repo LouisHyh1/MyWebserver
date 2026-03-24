@@ -10,7 +10,7 @@ int main() {
     WebServer server(
         5220, 3, 60000, false,
         3306, "root", "20020522", "Louis_db",
-        12, 6, true, 1, 1024
+        12, 8, true, 3, 1024
     );
     server.Start();
 }
