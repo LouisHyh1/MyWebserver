@@ -1,4 +1,6 @@
-#pragma once
+#ifndef PAGEMAP_H
+#define PAGEMAP_H
+
 #include "Common.h"
 
 // Three-level radix tree
@@ -117,3 +119,5 @@ public:
 		// 再针对那一段具体的范围调用 Ensure(start_page, page_count) 即可。
 	}
 };
+
+#endif

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef COMMON_H
+#define COMMON_H
+
 #include <iostream>
 #include <vector>
 #include <thread>
@@ -367,3 +369,5 @@ private:
 public:
 	std::mutex _mtx;  // 每个CentralCache中的哈希桶都要有一个桶锁
 };
+
+#endif

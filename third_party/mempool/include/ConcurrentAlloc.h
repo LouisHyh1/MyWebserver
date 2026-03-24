@@ -1,10 +1,11 @@
-#pragma once
+#ifndef CONCURRENTALLOC_H
+#define CONCURRENTALLOC_H
 #include "ThreadCache.h"
 #include "ObjectPool.h"
 #include "PageCache.h"
 
 // 其实就是tcmalloc，线程调用这个函数申请空间
-void* ConcurrentAlloc(size_t size) {
+inline void* ConcurrentAlloc(size_t size) {
 	// 如果申请空间超过256KB，就直接找下层的去要
 	if (size > MAX_BYTES) {
 		size_t alignSize = SizeClass::RoundUp(size);  // 先按照页大小对齐
@@ -38,7 +39,7 @@ void* ConcurrentAlloc(size_t size) {
 }
 
 // 线程调用这个函数用来回收空间
-void ConcurrentFree(void* obj) {
+inline void ConcurrentFree(void* obj) {
 	assert(obj != nullptr);
 
 	// 通过ptr找到对应的span，因为前面申请空间的
@@ -58,3 +59,5 @@ void ConcurrentFree(void* obj) {
 		pTLSThreadCache->Deallocate(obj, size);
 	}
 }
+
+#endif

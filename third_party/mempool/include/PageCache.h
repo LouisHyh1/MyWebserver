@@ -1,4 +1,6 @@
-#pragma once
+#ifndef PAGECACHE_H
+#define PAGECACHE_H
+
 #include "Common.h"
 #include "ObjectPool.h"
 #include "PageMap.h"
@@ -39,3 +41,5 @@ private:
 	PageCache(const PageCache& other) = delete;
 	PageCache& operator=(const PageCache& other) = delete;
 };
+
+#endif

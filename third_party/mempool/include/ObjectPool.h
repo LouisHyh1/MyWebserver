@@ -1,4 +1,5 @@
-#pragma once
+#ifndef OBJECTPOOL_H
+#define OBJECTPOOL_H
 
 #include "Common.h"
 
@@ -68,3 +69,5 @@ private:
 public:
 	std::mutex _poolMtx; // 防止ThreadCache申请时申请到空指针
 };
+
+#endif

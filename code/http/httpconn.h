@@ -12,6 +12,7 @@
 #include "../buffer/buffer.h"
 #include "httprequest.h"
 #include "httpresponse.h"
+#include "ConcurrentAlloc.h"
 
 class HttpConn {
 public:
@@ -47,6 +48,29 @@ public:
     // 判断当前 HTTP 连接是否是“长连接”（Keep-Alive）。
     bool IsKeepAlive() const {
         return request_.IsKeepAlive();
+    }
+
+    // ==========================================
+    // 为 HttpConn 专属重载 operator new 和 delete
+    // ==========================================
+    static void* operator new(size_t size) {
+        // 调用你的定长内存池/并发内存池
+        return ConcurrentAlloc(size); 
+    }
+
+    static void operator delete(void* ptr) {
+        if (ptr == nullptr) return;
+        ConcurrentFree(ptr);
+    }
+    
+    // 如果有对象数组分配需求（虽然一般不会 delete[] HttpConn），可以顺手重载
+    static void* operator new[](size_t size) {
+        return ConcurrentAlloc(size);
+    }
+
+    static void operator delete[](void* ptr) {
+        if (ptr == nullptr) return;
+        ConcurrentFree(ptr);
     }
 
     static bool isET;  // 服务器是否工作在 Epoll 的边缘触发（Edge Trigger）模式。

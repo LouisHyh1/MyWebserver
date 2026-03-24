@@ -1,4 +1,6 @@
-#pragma once
+#ifndef CENTRALCACHE_H
+#define CENTRALCACHE_H
+
 #include "Common.h"
 
 class CentralCache {
@@ -30,3 +32,5 @@ private:
 	SpanList _spanLists[FREE_LIST_NUM];  // 以SpanList为元素的数组（哈希桶）
 	static CentralCache _sInst;  // 饿汉模式创建一个CentralCache
 };
+
+#endif

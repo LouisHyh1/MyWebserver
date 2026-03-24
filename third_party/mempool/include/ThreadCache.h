@@ -1,4 +1,5 @@
-#pragma once
+#ifndef THREADCACHE_H
+#define THREADCACHE_H
 #include "Common.h"
 
 class ThreadCache {
@@ -23,3 +24,5 @@ private:
 // TLS：线程局部存储（TLS），是一种变量的存储方法，这个变量在它所在的线程内是全局可访问的，但是不能被其他线程访问到
 // TLS的全局对象的指针，这样每个线程都能有一个独立的全局对象
 static thread_local ThreadCache* pTLSThreadCache = nullptr;
+
+#endif

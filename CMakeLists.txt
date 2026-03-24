@@ -1,3 +1,4 @@
+
 # 强烈建议加上 -fno-omit-frame-pointer (保留栈帧指针)，这样 perf 抓取的调用栈才不会断裂！
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fno-omit-frame-pointer")
 
@@ -19,6 +20,14 @@ add_compile_options(-O2 -Wall -g)
 # CMake 非常聪明，如果 bin 文件夹不存在，它在编译时会自动帮你创建！
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
+# ==================== 新增：内存池路径配置 ====================
+# 包含内存池的头文件路径
+include_directories(${CMAKE_SOURCE_DIR}/third_party/mempool/include)
+
+# 指定库文件搜索路径
+link_directories(${CMAKE_SOURCE_DIR}/third_party/mempool/lib)
+# ==============================================================
+
 # 6. 获取所有源文件（注意：由于 CMakeLists 放在根目录，这里去掉了 ../）
 file(GLOB SOURCES 
     "code/log/*.cpp"
@@ -37,4 +46,6 @@ add_executable(server ${SOURCES})
 find_package(Threads REQUIRED)
 
 # 9. 将多线程库和 MySQL 库链接到我们的 server 程序上 (相当于 -pthread -lmysqlclient)
-target_link_libraries(server PRIVATE Threads::Threads mysqlclient)
+# ==================== 修改：追加链接内存池库 ====================
+# 将原有的 target_link_libraries 追加 mempool 静态库
+target_link_libraries(server PRIVATE Threads::Threads mysqlclient mempool)
