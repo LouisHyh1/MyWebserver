@@ -56,7 +56,7 @@ public:
 	ssize_t WriteFd(int fd, int* Errno);
 
 	// ==========================================
-    // 为 HttpConn 专属重载 operator new 和 delete
+    // 为 Buffer 专属重载 operator new 和 delete
     // ==========================================
     static void* operator new(size_t size) {
         // 调用你的定长内存池/并发内存池
@@ -68,7 +68,7 @@ public:
         ConcurrentFree(ptr);
     }
     
-    // 如果有对象数组分配需求（虽然一般不会 delete[] HttpConn），可以顺手重载
+    // 如果有对象数组分配需求（虽然一般不会 delete[] Buffer），可以顺手重载
     static void* operator new[](size_t size) {
         return ConcurrentAlloc(size);
     }
